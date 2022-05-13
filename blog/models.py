@@ -6,15 +6,14 @@ from django.contrib.auth.models import User
 class PostQuerySet(models.QuerySet):
 
     def year(self, year):
-        posts_at_year = self.filter(published_at__year=year).order_by('published_at')
+        posts_at_year = self.filter(published_at__year=year) \
+                            .order_by('published_at')
         return posts_at_year
 
     def popular(self):
-        popular_posts = Post.objects.annotate(
-        likes_count=models.Count('likes')).order_by(
-        '-likes_count')
-        return popular_posts
-
+        posts = Post.objects.annotate(likes_count=models.Count('likes')) \
+                                    .order_by('-likes_count')
+        return posts
 
     def fetch_with_comments_count(self):
         '''Возвращает список постов с добавленным количеством комментариев.
@@ -23,12 +22,13 @@ class PostQuerySet(models.QuerySet):
         posts_with_comments = Post.objects.filter(
             id__in=popular_posts_ids).annotate(
             comments_count=models.Count('comments'))
-        ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+        ids_and_comments = posts_with_comments.values_list('id',
+                                                           'comments_count')
         count_for_id = dict(ids_and_comments)
         for post in self:
-            post.comments_count = count_for_id[post.id]    
+            post.comments_count = count_for_id[post.id]
         return list(self)
-            
+
 
 class TagQuerySet(models.QuerySet):
 
@@ -36,6 +36,7 @@ class TagQuerySet(models.QuerySet):
         popular_tags = Tag.objects.annotate(
             posts_count=models.Count('posts')).order_by('-posts_count')
         return popular_tags
+
 
 class Post(models.Model):
     title = models.CharField('Заголовок', max_length=200)
@@ -67,7 +68,6 @@ class Post(models.Model):
 
     objects = PostQuerySet.as_manager()
 
-
     class Meta:
         ordering = ['-published_at']
         verbose_name = 'пост'
@@ -87,7 +87,6 @@ class Tag(models.Model):
         return reverse('tag_filter', args={'tag_title': self.slug})
 
     objects = TagQuerySet.as_manager()
-
 
     class Meta:
         ordering = ['title']
